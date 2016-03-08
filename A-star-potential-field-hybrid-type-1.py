@@ -368,7 +368,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
             print 'out of boundaries' , sx, sy
             return sol
 
-        if sx < dx+ 10 and sx > dx - 10 and sy < dy+10 and sy > dy-10:
+        if sx < dx+ 2 and sx > dx - 2 and sy < dy+2 and sy > dy-2:
             break
 
         sol.append((sx, sy))
