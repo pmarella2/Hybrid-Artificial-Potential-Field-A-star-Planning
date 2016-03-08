@@ -394,13 +394,13 @@ def final_path(sol, arr):
         l1 = len(ret)
         print l1
         print ret
-        '''
+
         x1 = ret[l1-1][0]
         x2 = ret[l1-2][0]
         y1 = ret[l1-1][1]
         y2 = ret[l1-2][1]
-        '''
-        #theta = math.atan2(x1-x2, y1-y2)
+
+        theta = math.atan2(x1-x2, y1-y2)
         start = end
         end += div
         if end > l-1:
@@ -422,6 +422,7 @@ def main():
 
         x, y  = thresh1.shape
         arr = np.zeros((x, y, 3), np.uint8)
+        arr1 = np.zeros((x, y, 3), np.uint8)
         final_contours= []
         image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
@@ -429,6 +430,7 @@ def main():
             if cv2.contourArea(cnt) > 300 and cv2.contourArea(cnt) < 5000 :
                 cv2.drawContours(img, [cnt],-1, [0, 255, 255])
                 cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
+                cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
                 final_contours.append(cnt)
         cmax = 50
         start = time.clock()
@@ -459,7 +461,7 @@ def main():
         dy = 200  # raw_input()
 
         sol = bfs(arr, sx, sy, dx, dy, final_contours)
-        solution = final_path(sol, arr)
+        solution = final_path(sol, arr1)
 
 
         if len(solution) == 0:
