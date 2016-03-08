@@ -392,15 +392,12 @@ def final_path(sol, arr):
         for i in ret:
             solution.append(i)
         l1 = len(ret)
-        print l1
-        print ret
-
-        x1 = ret[l1-1][0]
-        x2 = ret[l1-2][0]
-        y1 = ret[l1-1][1]
-        y2 = ret[l1-2][1]
-
-        theta = math.atan2(x1-x2, y1-y2)
+        if l1 > 2:
+            x1 = ret[l1-1][0]
+            x2 = ret[l1-2][0]
+            y1 = ret[l1-1][1]
+            y2 = ret[l1-2][1]
+            theta = math.atan2(x1-x2, y1-y2)
         start = end
         end += div
         if end > l-1:
