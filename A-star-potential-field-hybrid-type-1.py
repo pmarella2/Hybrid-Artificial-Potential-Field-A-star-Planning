@@ -242,9 +242,7 @@ def main():
         dx = 199   # raw_input()
         dy = 190  # raw_input()
 
-       # s = time.clock()
         solution = bfs(arr, sx, sy, dx, dy, final_contours)
-      #  print 'time: ', time.clock()-s
         if len(solution) == 0:
             print 'No solution from source to destination'
         else:
