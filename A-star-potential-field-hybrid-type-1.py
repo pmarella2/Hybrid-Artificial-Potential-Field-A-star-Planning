@@ -9,12 +9,17 @@ Hence this way we are using power of both A-star and potential field  :)
 
 import cv2
 import numpy as np
+from time import sleep
 import copy
 import glob
 import math
 import time
 import Queue as Q
 
+
+def printx(x):
+    #print x
+    pass
 '''
 function definition from A-star
 start
@@ -41,14 +46,11 @@ def penalty1(clearance):
    sigma_sqr = 1000
    return alpha*math.exp((-1)*clearance*clearance/sigma_sqr)
 
-
-
 def cost(ox, oy, nx, ny, penalty, clearance): #ox, oy:- old points  nx, ny :- new points
     return penalty + math.sqrt((ox-nx)*(ox-nx)+ (oy-ny)*(oy-ny))*(1+penalty1(clearance))
 
 def heuristic(nx, ny,dx, dy): #ox, oy:- old points  nx, ny :- new points
     return math.sqrt((nx-dx)*(nx-dx)+ (ny-dy)*(ny-dy))
-
 
 def check_boundaries1(ex, ey, nx, ny): #ex, ey :- end points of frame
     if nx > -1 and ny > -1 and nx < ex and ny < ey:
@@ -98,8 +100,8 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
             while p is not None:
                 solution.append([p.pointx, p.pointy])
                 p = p.parent
-            print 'time : ', time.clock()-s
-            print cnt, cntq
+            #print 'time : ', time.clock()-s
+            #print cnt, cntq
             return solution
 
         for i in range(len(actions)):
@@ -118,17 +120,13 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
                         distplusHeuristic[nx][ny] = dist[nx][ny] + h_new
                         cntq = cntq+1
                         q.put(pixel1(pen_new, nx, ny, p, h_new))
-    print 'time : ', time.clock()-s
+    #print 'time : ', time.clock()-s
     return []
 
 '''
 function definition from Clearance-feasibility
 end
 '''
-
-
-
-
 
 '''
 function definition from Clearance-feasibility
@@ -193,6 +191,224 @@ end
 
 
 
+def check_obstacles(arr, ansx, ansy):  #function to check whether a given point is on obstacle or not
+    if arr[ansx][ansy][0] == 255:
+        return True
+    else:
+        return False
+
+def feasible(arr, x, y):  #function to check if a point is feasible or not
+    ex, ey, ez = arr.shape
+    x = int(x)
+    y = int(y)
+
+    if check_boundaries(ex, ey, x, y):
+        return not check_obstacles(arr, x, y)
+    else:
+        return False
+
+def dist(sx, sy, x, y, theta, arr, q_star):  #distance of obstacle in direction theta in radians
+    ansx = sx
+    ansy = sy
+    flag = True
+    count = 1
+    while True:
+        if count > q_star:
+            return (-1, -1)
+        ansx = sx + count*math.sin(theta)
+        ansy = sy + count*math.cos(theta)
+
+        if check_boundaries(x, y, ansx, ansy) == False:
+            break
+        else:
+            if check_obstacles(arr, ansx, ansy) == True:
+                break
+        count += 1
+
+    return (ansx-sx,ansy- sy)
+
+
+def obstacle_force(arr, sx, sy, q_star): #sx,sy :- source    dx, dy:- destination    q-star:- threshold distance of obstacles
+    forcex = 0
+    forcey = 0
+    neta = 30000
+    x, y , z= arr.shape
+    for i in range(8):
+        (ox,oy) = dist(sx, sy, x, y, i*math.pi/4, arr, q_star)
+        theta = i*math.pi/4
+        ox = math.fabs(ox)
+        oy = math.fabs(oy)
+
+        d = math.hypot(ox,oy)
+        fx = 0
+        fy = 0
+        if ox == -1 or oy == -1:
+            fx = 0
+            fy = 0
+        else:
+            if d == 0:
+                d = 1
+            f = (neta*(1.0/q_star- 1.0/d))/(d*d)
+            fx = f*math.sin(theta)
+            fy = f*math.cos(theta)
+
+        forcex += fx
+        forcey += fy
+
+    return (forcex, forcey)
+
+def goal_force(arr, sx, sy, dx, dy, d_star): # sx, sy :- source  dx, dy:- destination   d_star:- threshold distance from goal
+    forcex = 0
+    forcey = 0
+    tau = 1  #constant
+    #printx('10')
+    d = math.sqrt((dx-sx)*(dx-sx) + (dy-sy)*(dy-sy))
+    if d > d_star:
+        forcex += ((d_star*tau*math.sin(math.atan2(dx-sx, dy-sy))))
+        forcey += ((d_star*tau*math.cos(math.atan2(dx-sx, dy-sy))))
+
+    else:
+        forcex += ((dx-sx)*tau)
+        forcey += ((dy-sy)*tau)
+
+    #printx('11')
+    return (forcex, forcey)
+
+
+def path_planning(arr, sx1, sy1, dx, dy, theta):
+    '''
+
+    :param arr: input map
+    :param sx1: source x
+    :param sy1: source y
+    :param dx: destination x
+    :param dy: destination y
+    :return: path
+    '''
+
+    #Parameters Declaration
+
+    flx = 10000  #maximum total force in x
+    fly = 10000  #maximum total force in y
+    v = 4 #velocity magnitude
+    t = 1 #time lapse
+    #theta = 0 #initial angle
+    x,y,z = arr.shape
+    theta_const = math.pi*30/180  #maximum allowed turn angle
+    q_star = 50000
+    d_star = 20000
+
+    if arr[sx1][sy1][0] == 255 or arr[dx][dy][0] == 255:
+        return []
+    sx = sx1
+    sy = sy1
+
+    sol = []
+    sol.append((sx, sy))
+
+
+    sx += int(v*math.sin(theta))
+    sy += int(v*math.cos(theta))
+    sol.append((sx, sy))
+
+    '''
+        if Q and P are two vectors and @ is angle between them
+
+        resultant ,R = (P^2 + R^2 + 2*P*Q cos @)^(1/2)
+
+        resultant, theta = atan((Q*sin @)/(P+Q*cos @))
+    '''
+
+    #count  = 0
+    while True:
+        #count += 1
+        (fx, fy) = obstacle_force(arr, sx, sy, q_star)
+        (gx, gy) = goal_force(arr, sx, sy, dx, dy, d_star)
+
+        tx = gx+fx
+        ty = gy+fy
+        if(tx < 0):
+            tx = max(tx, -flx)
+        else:
+            tx = min(tx, flx)
+        if(ty < 0):
+            ty = max(ty, -fly)
+        else:
+            ty = min(ty, fly)
+        theta1 = math.atan2(tx, ty)
+
+        if arr[sx][sy][0] == 255:
+            print gx, gy, fx, fy
+            print 'tx ', tx, ' ty ', ty, 'sx ', sx, ' sy ', sy
+            print theta1*180/math.pi, theta*180/math.pi
+            sleep(10)
+
+        P = v
+        angle = theta1-theta  #angle between velocity and force vector
+
+        Q = math.sqrt(tx*tx + ty*ty)
+
+        theta2 = math.atan2((Q*math.sin(angle)),((P + Q*math.cos(angle))))   #resultant angle with velocity
+
+        if theta2 < 0:
+            theta2 = max(theta2, -theta_const)
+        else:
+            theta2 = min(theta2, theta_const)
+
+        theta += theta2
+
+        theta = (theta + 2*math.pi)%(2*math.pi)
+
+        sx = sx + v*math.sin(theta)
+        sy = sy + v*math.cos(theta)
+        sx = int(sx)
+        sy = int(sy)
+
+        if not check_boundaries(x, y, sx, sy):
+            print 'out of boundaries' , sx, sy
+            return sol
+
+        if sx < dx+ 10 and sx > dx - 10 and sy < dy+10 and sy > dy-10:
+            break
+
+        sol.append((sx, sy))
+
+    return sol
+
+
+def final_path(sol, arr):
+    l = len(sol)
+    print l
+    div = 30
+
+    start = 0
+    end = div
+    solution = []
+    theta = 0
+
+    while start < l-1:
+        print sol[start][0], sol[start][1], sol[end][0], sol[end][1]
+        ret = path_planning(arr, sol[start][0], sol[start][1], sol[end][0], sol[end][1], theta)
+        for i in ret:
+            solution.append(i)
+        l1 = len(ret)
+        print l1
+        print ret
+        '''
+        x1 = ret[l1-1][0]
+        x2 = ret[l1-2][0]
+        y1 = ret[l1-1][1]
+        y2 = ret[l1-2][1]
+        '''
+        #theta = math.atan2(x1-x2, y1-y2)
+        start = end
+        end += div
+        if end > l-1:
+            end = l-1
+
+    return solution
+
+
 def main():
     for im in images:
 
@@ -237,12 +453,15 @@ def main():
         '''
         Code from A-star.py
         '''
-        sx = 20 # raw_input("Enter source and destination Coordinates")
-        sy = 20  # raw_input()
-        dx = 199   # raw_input()
-        dy = 190  # raw_input()
+        sx = 30 # raw_input("Enter source and destination Coordinates")
+        sy = 50  # raw_input()
+        dx = 30   # raw_input()
+        dy = 200  # raw_input()
 
-        solution = bfs(arr, sx, sy, dx, dy, final_contours)
+        sol = bfs(arr, sx, sy, dx, dy, final_contours)
+        solution = final_path(sol, arr)
+
+
         if len(solution) == 0:
             print 'No solution from source to destination'
         else:
