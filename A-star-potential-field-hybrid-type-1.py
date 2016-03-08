@@ -379,7 +379,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
 def final_path(sol, arr):
     l = len(sol)
     print l
-    div = 30
+    div = 40
 
     start = 0
     end = div
