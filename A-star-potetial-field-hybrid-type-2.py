@@ -1,9 +1,7 @@
 '''
-In this method , we are trying to find offline path first using A* algorithm, then we use Artificial potential method
-to reach local goals on A* planned path.
-Suppose, a1, a2, a3, .......  an be path we get from A*, then to potential field we give following as consecutive goals:
-a(i), a(i+4), a(i+8), a(i+12), ..... a(i+n)
-
+In this method ,we are actually trying to find out a mix solution. Potetial field works best when it comes near obstacles,
+while on other had A-star works best in reverse case.
+So here we will calculate the distance from nearest obstacle and accordingly we will change our method to A-star from Potential Field ad vice versa.
 Hence this way we are using power of both A-star and potential field  :)
 '''
 
@@ -15,7 +13,6 @@ import glob
 import math
 import time
 import Queue as Q
-
 
 def printx(x):
     #print x
@@ -58,7 +55,29 @@ def check_boundaries1(ex, ey, nx, ny): #ex, ey :- end points of frame
     else:
         return False
 
-def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx, dy :- destination coordinates
+def nearestObstacle(x, y, arr): #this function returns the distance of nearest obstacle from the given point
+    d = 100000000000
+
+    for i in range(8):
+        ansx = 0
+        ansy = 0
+        count = 1
+        theta = i*math.pi/4
+        while True:
+            ansx = x + count*math.sin(theta)
+            ansy = y + count*math.cos(theta)
+
+            if check_boundaries(x, y, ansx, ansy) == False:
+                break
+            else:
+                if check_obstacles(arr, ansx, ansy) == True:
+                    break
+            count += 10
+        d = min(d, math.hypot(ansx, ansy))
+
+    return d
+
+def bfs(arr, sx, sy, dx, dy, final_contours, d): # sx, sy :- source coordinates  dx, dy :- destination coordinates, d:-switch distance
     q = Q.PriorityQueue()
     temp1 = True
     temp2 = True
@@ -102,6 +121,11 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
                 p = p.parent
             #print 'time : ', time.clock()-s
             #print cnt, cntq
+            return solution
+        if nearestObstacle(x, y, arr) < d:
+            while p is not None:
+                solution.append([p.pointx, p.pointy])
+                p = p.parent
             return solution
 
         for i in range(len(actions)):
@@ -189,8 +213,6 @@ function definition from Clearance-feasibility
 end
 '''
 
-
-
 def check_obstacles(arr, ansx, ansy):  #function to check whether a given point is on obstacle or not
     if arr[ansx][ansy][0] == 255:
         return True
@@ -226,7 +248,6 @@ def dist(sx, sy, x, y, theta, arr, q_star):  #distance of obstacle in direction 
         count += 1
 
     return (ansx-sx,ansy- sy)
-
 
 def obstacle_force(arr, sx, sy, q_star): #sx,sy :- source    dx, dy:- destination    q-star:- threshold distance of obstacles
     forcex = 0
@@ -274,8 +295,10 @@ def goal_force(arr, sx, sy, dx, dy, d_star): # sx, sy :- source  dx, dy:- destin
     #printx('11')
     return (forcex, forcey)
 
-
-def path_planning(arr, sx1, sy1, dx, dy, theta):
+def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
+    cv2.imshow('img', arr)
+    k = cv2.waitKey(0)
+    print 'abc'
     '''
 
     :param arr: input map
@@ -283,6 +306,8 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
     :param sy1: source y
     :param dx: destination x
     :param dy: destination y
+    :param theta: current angle
+    :param d: switch distance
     :return: path
     '''
 
@@ -297,8 +322,11 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
     theta_const = math.pi*30/180  #maximum allowed turn angle
     q_star = 50000
     d_star = 20000
+    print 'xyz'
 
     if arr[sx1][sy1][0] == 255 or arr[dx][dy][0] == 255:
+        print arr[sx1][sy1], sx1, sy1
+        print arr[dx][dy], dx, dy
         return []
     sx = sx1
     sy = sy1
@@ -306,7 +334,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
     sol = []
     sol.append((sx, sy))
 
-
+    print 'def'
     sx += int(v*math.sin(theta))
     sy += int(v*math.cos(theta))
     sol.append((sx, sy))
@@ -319,7 +347,6 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
         resultant, theta = atan((Q*sin @)/(P+Q*cos @))
     '''
 
-    #count  = 0
     while True:
         #count += 1
         (fx, fy) = obstacle_force(arr, sx, sy, q_star)
@@ -369,44 +396,62 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
             return sol
 
         sol.append((sx, sy))
-
         if sx < dx+ 2 and sx > dx - 2 and sy < dy+2 and sy > dy-2:
+            print 'abc'
             break
 
-
+        nd = nearestObstacle(sx, sy, arr)
+        print nd
+        if nd > sd:
+            print nd, sx, sy
+            break
 
     return sol
 
+def check(x, y, dx, dy):
+    if x < dx+2 and x > dx -2 and y < dy+2 and y > dy-2:
+        return True
+    else:
+        return False
 
-def final_path(sol, arr):
-    l = len(sol)
-    print l
-    div = 35
+def final_path(sx, sy, dx, dy, final_contours, arr, arr1):
+    switch_d = 10000  #switch distance, the distance at which we change our methods
 
-    start = 0
-    end = div
     solution = []
+    astar = False
+    potential = True
     theta = 0
+    while True:
+        if astar == True:
+            sol = bfs(arr1, sx, sy, dx, dy, final_contours, switch_d)
+            for i in sol:
+                solution.append(i)
+            l = len(solution)
+            print sol
+            if check(solution[l-1][0], solution[l-1][1], dx, dy):
+                potential = False
+            else:
+                potential = True
+                theta = math.atan2(solution[l-1][0]-solution[l-2][0], solution[l-1][1]-solution[l-2][1])
+                sx = solution[l-1][0]
+                sy = solution[l-1][1]
+            astar = False
 
-    while start < l-1:
-        print sol[start][0], sol[start][1], sol[end][0], sol[end][1]
-        ret = path_planning(arr, sol[start][0], sol[start][1], sol[end][0], sol[end][1], theta)
-        for i in ret:
-            solution.append(i)
-        l1 = len(ret)
-        if l1 > 2:
-            x1 = ret[l1-1][0]
-            x2 = ret[l1-2][0]
-            y1 = ret[l1-1][1]
-            y2 = ret[l1-2][1]
-            theta = math.atan2(x1-x2, y1-y2)
-        start = end
-        end += div
-        if end > l-1:
-            end = l-1
+        elif potential == True:
+            sol = path_planning(arr, sx, sy, dx, dy, theta, switch_d)
+            for i in sol:
+                solution.append(i)
+            l = len(solution)
+            print solution
+            if check(solution[l-1][0], solution[l-1][1], dx, dy):
+                astar = False
+            else:
+                astar = True
+                sx = solution[l-1][0]
+                sy = solution[l-1][1]
+            potential = False
 
     return solution
-
 
 def main():
     for im in images:
@@ -454,14 +499,12 @@ def main():
         '''
         Code from A-star.py
         '''
-        sx = 30 # raw_input("Enter source and destination Coordinates")
-        sy = 50  # raw_input()
-        dx = 30   # raw_input()
-        dy = 200  # raw_input()
+        sx = 5 # raw_input("Enter source and destination Coordinates")
+        sy = 5  # raw_input()
+        dx = 10   # raw_input()
+        dy = 10 # raw_input()
 
-        sol = bfs(arr, sx, sy, dx, dy, final_contours)
-        solution = final_path(sol, arr1)
-
+        solution = final_path(sx, sy, dx, dy,final_contours, arr, arr1)
 
         if len(solution) == 0:
             print 'No solution from source to destination'
