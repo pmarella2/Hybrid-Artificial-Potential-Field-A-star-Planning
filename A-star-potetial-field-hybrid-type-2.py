@@ -49,14 +49,10 @@ def cost(ox, oy, nx, ny, penalty, clearance): #ox, oy:- old points  nx, ny :- ne
 def heuristic(nx, ny,dx, dy): #ox, oy:- old points  nx, ny :- new points
     return math.sqrt((nx-dx)*(nx-dx)+ (ny-dy)*(ny-dy))
 
-def check_boundaries1(ex, ey, nx, ny): #ex, ey :- end points of frame
-    if nx > -1 and ny > -1 and nx < ex and ny < ey:
-        return True
-    else:
-        return False
-
 def nearestObstacle(x, y, arr): #this function returns the distance of nearest obstacle from the given point
     d = 100000000000
+    #print 'shape', arr.shape
+    ex, ey, ez = arr.shape
 
     for i in range(8):
         ansx = 0
@@ -67,17 +63,17 @@ def nearestObstacle(x, y, arr): #this function returns the distance of nearest o
             ansx = x + count*math.sin(theta)
             ansy = y + count*math.cos(theta)
 
-            if check_boundaries(x, y, ansx, ansy) == False:
+            if check_boundaries(ex, ey, ansx, ansy) == False:
                 break
             else:
                 if check_obstacles(arr, ansx, ansy) == True:
                     break
-            count += 10
-        d = min(d, math.hypot(ansx, ansy))
+            count += 5
+        d = min(d, math.sqrt((ansx-x)*(ansx-x) + (ansy-y)*(ansy-y)))
 
     return d
 
-def bfs(arr, sx, sy, dx, dy, final_contours, d): # sx, sy :- source coordinates  dx, dy :- destination coordinates, d:-switch distance
+def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx, dy :- destination coordinates
     q = Q.PriorityQueue()
     temp1 = True
     temp2 = True
@@ -106,7 +102,9 @@ def bfs(arr, sx, sy, dx, dy, final_contours, d): # sx, sy :- source coordinates 
     s = time.clock()
     cnt = 0
     cntq = 0
+    count  = 0
     while not q.empty():
+        count += 1
         p = q.get()
         x = int(p.pointx)
         y = int(p.pointy)
@@ -119,22 +117,17 @@ def bfs(arr, sx, sy, dx, dy, final_contours, d): # sx, sy :- source coordinates 
             while p is not None:
                 solution.append([p.pointx, p.pointy])
                 p = p.parent
-            #print 'time : ', time.clock()-s
-            #print cnt, cntq
-            return solution
-        if nearestObstacle(x, y, arr) < d:
-            while p is not None:
-                solution.append([p.pointx, p.pointy])
-                p = p.parent
+            print 'time : ', time.clock()-s
+            print cnt, cntq
             return solution
 
         for i in range(len(actions)):
             nx = int(actions[i][0] + x)
             ny = int(actions[i][1] + y)
-            if check_boundaries1(ex, ey, nx, ny) == True:
+            if check_boundaries(ex, ey, nx, ny) == True:
                 #if arr.item(nx, ny, 0) == 0 and arr.item(nx, ny, 1) == 0 and arr.item(nx, ny, 2) == 0:
                     pen = dist[x][y]
-                    pen_new = cost(x, y, nx, ny, pen, arr[nx][ny][0])
+                    pen_new = cost(x, y, nx, ny, pen, 255-arr[nx][ny][0])
                     h_new = heuristic(nx, ny, dx, dy)
                     if dist[nx][ny] > pen_new :
                         dist[nx][ny]  = pen_new
@@ -144,7 +137,7 @@ def bfs(arr, sx, sy, dx, dy, final_contours, d): # sx, sy :- source coordinates 
                         distplusHeuristic[nx][ny] = dist[nx][ny] + h_new
                         cntq = cntq+1
                         q.put(pixel1(pen_new, nx, ny, p, h_new))
-    #print 'time : ', time.clock()-s
+    print 'time : ', time.clock()-s
     return []
 
 '''
@@ -208,6 +201,7 @@ def fill_clearance(arr,cmax,  final_contours): # sx, sy :- source coordinates  d
                     if min_cost[nx][ny] > penalty(x, y, nx, ny, pen):
                         q.put(pixel(penalty(x,y,nx,ny,pen), nx, ny))
     return min_cost
+
 '''
 function definition from Clearance-feasibility
 end
@@ -296,9 +290,11 @@ def goal_force(arr, sx, sy, dx, dy, d_star): # sx, sy :- source  dx, dy:- destin
     return (forcex, forcey)
 
 def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
-    cv2.imshow('img', arr)
-    k = cv2.waitKey(0)
-    print 'abc'
+    ex, ey, ez = arr.shape
+    arr1 = np.zeros((ex, ey))
+    #cv2.imshow('img', arr)
+    #k = cv2.waitKey(0)
+    #print 'abc'
     '''
 
     :param arr: input map
@@ -322,7 +318,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
     theta_const = math.pi*30/180  #maximum allowed turn angle
     q_star = 50000
     d_star = 20000
-    print 'xyz'
+    #print 'xyz'
 
     if arr[sx1][sy1][0] == 255 or arr[dx][dy][0] == 255:
         print arr[sx1][sy1], sx1, sy1
@@ -334,7 +330,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
     sol = []
     sol.append((sx, sy))
 
-    print 'def'
+    #print 'def'
     sx += int(v*math.sin(theta))
     sy += int(v*math.cos(theta))
     sol.append((sx, sy))
@@ -346,9 +342,9 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
 
         resultant, theta = atan((Q*sin @)/(P+Q*cos @))
     '''
-
+    count = 0
     while True:
-        #count += 1
+        count += 1
         (fx, fy) = obstacle_force(arr, sx, sy, q_star)
         (gx, gy) = goal_force(arr, sx, sy, dx, dy, d_star)
 
@@ -364,6 +360,8 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
             ty = min(ty, fly)
         theta1 = math.atan2(tx, ty)
 
+        #print 'tx' ,tx, 'ty' ,ty
+            #sleep(1)
         if arr[sx][sy][0] == 255:
             print gx, gy, fx, fy
             print 'tx ', tx, ' ty ', ty, 'sx ', sx, ' sy ', sy
@@ -401,11 +399,14 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
             break
 
         nd = nearestObstacle(sx, sy, arr)
-        print nd
+        #print nd, sx, sy
+        print 'nd ',nd, sx, sy
+        #sleep(0.5)
         if nd > sd:
-            print nd, sx, sy
+            print 'nd ',nd, sx, sy
             break
 
+    #sleep(10)
     return sol
 
 def check(x, y, dx, dy):
@@ -414,50 +415,66 @@ def check(x, y, dx, dy):
     else:
         return False
 
-def final_path(sx, sy, dx, dy, final_contours, arr, arr1):
-    switch_d = 10000  #switch distance, the distance at which we change our methods
-
+def final_path(sx, sy, dx, dy, arr, sol):
+    switch_d = 40
     solution = []
-    astar = False
-    potential = True
-    theta = 0
-    while True:
-        if astar == True:
-            sol = bfs(arr1, sx, sy, dx, dy, final_contours, switch_d)
-            for i in sol:
-                solution.append(i)
-            l = len(solution)
-            print sol
-            if check(solution[l-1][0], solution[l-1][1], dx, dy):
-                potential = False
+    delta = 5
+    theta = math.pi/8
+    l = len(sol)
+    dist = [0 for x in range(l)]
+    dict = {}
+    for i in range(len(sol)):
+        dict[(sol[i][0], sol[i][1])] = i
+    i = 0
+    while i < l:
+        print 'i ', i
+        nd = nearestObstacle(sx, sy, arr)
+        if nd < switch_d:
+            print 'nd ', nd
+            sol1 = path_planning(arr, sx, sy, dx, dy,theta, switch_d)
+            for k in sol1:
+                solution.append(k)
+            d = dict[(sx, sy)] + 4*len(sol1)
+            d1 = d-delta
+            d2 = d + delta
+            x1 = 0
+            x2 = 0
+            y1 = 0
+            y2 = 0
+            if d1 > 0:
+                (x1, y1) = sol[d1]
             else:
-                potential = True
-                theta = math.atan2(solution[l-1][0]-solution[l-2][0], solution[l-1][1]-solution[l-2][1])
-                sx = solution[l-1][0]
-                sy = solution[l-1][1]
-            astar = False
+                (x1, y1) = sol[0]
+            if d2 < len(sol):
+                (x2, y2) = sol[d2]
+            else:
+                (x2,y2) = sol[len(sol)-1]
 
-        elif potential == True:
-            sol = path_planning(arr, sx, sy, dx, dy, theta, switch_d)
-            for i in sol:
-                solution.append(i)
-            l = len(solution)
-            print solution
-            if check(solution[l-1][0], solution[l-1][1], dx, dy):
-                astar = False
-            else:
-                astar = True
-                sx = solution[l-1][0]
-                sy = solution[l-1][1]
-            potential = False
+            solx = sol[-1][0]
+            soly = sol[-1][1]
+            cost = 100000000
+            for j in range(d1, d2):
+                (x, y) = sol[j]
+                cost1 = math.sqrt((x-solx)*(x-solx) + (y-soly)*(y-soly))
+                if cost > cost1:
+                    cost = cost1
+                    (sx, sy) = sol[j]
+
+            i = dict[(sx, sy)]
+        else:
+            solution.append((sol[i][0], sol[i][1]))
+            i += 1
+            if i >= l:
+                break
+            sx = sol[i][0]
+            sy = sol[i][1]
+            theta = math.atan2(sol[i][0]-sol[i-1][0], sol[i][1]-sol[i-1][1])
 
     return solution
 
 def main():
     for im in images:
-
         img = cv2.imread(im)
-
         cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img2 = cv2.medianBlur(cimg,13)
 
@@ -480,31 +497,32 @@ def main():
         start = time.clock()
         min_cost = fill_clearance(arr,cmax, final_contours)
         print 'time: ',  time.clock()-start
-        '''
-        for i in xrange(x):
-            for j in xrange(y):
-                if min_cost[i][j] == 100000:
-                    min_cost[i][j] = 0;
-        '''
 
         for i in xrange(x):
             for j in xrange(y):
-                pix_val = int(5*min_cost[i][j])
+                pix_val = int(255-5*min_cost[i][j])
                 if(min_cost[i][j] > 10000):
-                    pix_val = 255
+                    pix_val = 0
                 arr[i, j] = (pix_val, pix_val, pix_val)
         for cnt in final_contours:
-            cv2.fillConvexPoly(arr, cnt, [0, 0, 0])
+            cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
 
         '''
         Code from A-star.py
         '''
         sx = 5 # raw_input("Enter source and destination Coordinates")
         sy = 5  # raw_input()
-        dx = 10   # raw_input()
-        dy = 10 # raw_input()
+        dx = 159   # raw_input()
+        dy = 100 # raw_input()
 
-        solution = final_path(sx, sy, dx, dy,final_contours, arr, arr1)
+        sol = bfs(arr, sx, sy, dx, dy, final_contours)
+        l = len(sol)
+        s = []
+        for i in range(l):
+            s.append((sol[l-i-1][0], sol[l-i-1][1]))
+        solution = final_path(sx,sy, dx, dy, arr, s)
+        print solution
+
 
         if len(solution) == 0:
             print 'No solution from source to destination'
@@ -513,6 +531,7 @@ def main():
                 start = (solution[i][1], solution[i][0])
                 cv2.circle(arr,start, 1, [255, 0, 255])
                 cv2.circle(img, start, 1, [255, 0, 255])
+                cv2.circle(arr1, start, 1, [255, 0, 255])
 
         cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
@@ -521,6 +540,7 @@ def main():
 
         cv2.imshow('image', img)
         cv2.imshow('arr', arr)
+        cv2.imshow('arr1', arr1)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
