@@ -30,3 +30,47 @@ if distance from nearest obstacle > k(some parameter):
 else:
     next position = Artificial-Potential-field planner
 ```
+
+---
+
+<b> Prequisites</b>
+- Python
+- OpenCV
+- Numpy
+- Matplotlib
+
+<b> Input Images </b>
+It will take all images in root folder as input images.
+
+Sample Input Images:
+
+![alt text][logo]
+[logo]: 1.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: 2.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: 3.jpg "Sample Image"
+
+Output Type 1:
+
+![alt text][logo]
+[logo]: output1/1.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: output1/2.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: output1/3.jpg "Sample Image"
+
+Output Type 2:
+
+![alt text][logo]
+[logo]: output2/1.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: output2/2.jpg "Sample Image"
+
+![alt text][logo]
+[logo]: output2/3.jpg "Sample Image"
