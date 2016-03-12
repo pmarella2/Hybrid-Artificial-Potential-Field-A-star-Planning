@@ -373,15 +373,13 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
         if sx < dx+ 2 and sx > dx - 2 and sy < dy+2 and sy > dy-2:
             break
 
-
-
     return sol
 
 
 def final_path(sol, arr):
     l = len(sol)
     print l
-    div = 35
+    div = 40
 
     start = 0
     end = div
@@ -409,6 +407,7 @@ def final_path(sol, arr):
 
 
 def main():
+    counter = 1
     for im in images:
 
         img = cv2.imread(im)
@@ -462,7 +461,6 @@ def main():
         sol = bfs(arr, sx, sy, dx, dy, final_contours)
         solution = final_path(sol, arr1)
 
-
         if len(solution) == 0:
             print 'No solution from source to destination'
         else:
@@ -475,10 +473,12 @@ def main():
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
         cv2.circle(img, (sy, sx), 2, [0, 255, 0])
         cv2.circle(img, (dy, dx), 2, [0, 255, 0])
-
+        output = "output1/"+`counter`
+        output += ".jpg"
+        cv2.imwrite(output, img)
+        counter += 1
         cv2.imshow('image', img)
         cv2.imshow('arr', arr)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
 main()

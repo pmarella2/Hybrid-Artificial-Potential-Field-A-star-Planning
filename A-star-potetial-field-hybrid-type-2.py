@@ -3,6 +3,9 @@ In this method ,we are actually trying to find out a mix solution. Potetial fiel
 while on other had A-star works best in reverse case.
 So here we will calculate the distance from nearest obstacle and accordingly we will change our method to A-star from Potential Field ad vice versa.
 Hence this way we are using power of both A-star and potential field  :)
+
+// merge function need improvement, write now it will not work for large values of switch_d
+
 '''
 
 import cv2
@@ -400,7 +403,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
 
         nd = nearestObstacle(sx, sy, arr)
         #print nd, sx, sy
-        print 'nd ',nd, sx, sy
+        #print 'nd ',nd, sx, sy
         #sleep(0.5)
         if nd > sd:
             print 'nd ',nd, sx, sy
@@ -415,8 +418,24 @@ def check(x, y, dx, dy):
     else:
         return False
 
+def make_path(sx, sy, dx, dy):
+    #print sx, sy, dx, dy
+    sol = []
+    theta = math.atan2(dx-sx, dy-sy)
+    i = 1
+    x = sx
+    y = sy
+    while not (x > dx-2 and x < dx + 2 and y > dy - 2 and y < dy + 2):
+            sol.append((x, y))
+            #print x, y
+            x = sx + int(i*math.sin(theta))
+            y = sy + int(i*math.cos(theta))
+            i += 1
+    return sol
+
 def final_path(sx, sy, dx, dy, arr, sol):
-    switch_d = 40
+    print 'len ', len(sol)
+    switch_d = 30
     solution = []
     delta = 5
     theta = math.pi/8
@@ -427,28 +446,34 @@ def final_path(sx, sy, dx, dy, arr, sol):
         dict[(sol[i][0], sol[i][1])] = i
     i = 0
     while i < l:
-        print 'i ', i
+        #print 'i ', i
         nd = nearestObstacle(sx, sy, arr)
         if nd < switch_d:
             print 'nd ', nd
             sol1 = path_planning(arr, sx, sy, dx, dy,theta, switch_d)
             for k in sol1:
                 solution.append(k)
+            sx1 = sol1[-1][0]
+            sy1 = sol1[-1][1]
             d = dict[(sx, sy)] + 4*len(sol1)
-            d1 = d-delta
+            d1 = d - delta
             d2 = d + delta
             x1 = 0
             x2 = 0
             y1 = 0
             y2 = 0
-            if d1 > 0:
-                (x1, y1) = sol[d1]
-            else:
-                (x1, y1) = sol[0]
-            if d2 < len(sol):
-                (x2, y2) = sol[d2]
-            else:
-                (x2,y2) = sol[len(sol)-1]
+
+            d1 = max(d1, 0)
+            if d1 > len(sol)-1 or d1 < 0:
+                print 'd1 : ' , d1, x1, y1
+
+            (x1, y1) = sol[d1]
+
+            d2 = min(len(sol)-1, d2)
+            (x2, y2) = sol[d2]
+
+            d1 = dict[(x1, y1)]
+            d2 = dict[(x2, y2)]
 
             solx = sol[-1][0]
             soly = sol[-1][1]
@@ -461,6 +486,9 @@ def final_path(sx, sy, dx, dy, arr, sol):
                     (sx, sy) = sol[j]
 
             i = dict[(sx, sy)]
+            sol1 = make_path(sx1, sy1, sx, sy)
+            for k in sol1:
+                solution.append(k)
         else:
             solution.append((sol[i][0], sol[i][1]))
             i += 1
@@ -473,7 +501,10 @@ def final_path(sx, sy, dx, dy, arr, sol):
     return solution
 
 def main():
+    counter = 1
     for im in images:
+        #if not im == "5.jpg":
+         #   continue
         img = cv2.imread(im)
         cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img2 = cv2.medianBlur(cimg,13)
@@ -537,6 +568,11 @@ def main():
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
         cv2.circle(img, (sy, sx), 2, [0, 255, 0])
         cv2.circle(img, (dy, dx), 2, [0, 255, 0])
+
+        output = "output2/"+`counter`
+        output += ".jpg"
+        cv2.imwrite(output, img)
+        counter += 1
 
         cv2.imshow('image', img)
         cv2.imshow('arr', arr)
