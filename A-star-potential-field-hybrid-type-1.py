@@ -379,7 +379,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
 def final_path(sol, arr):
     l = len(sol)
     print l
-    div = 40
+    div = 45
 
     start = 0
     end = div
@@ -453,10 +453,10 @@ def main():
         '''
         Code from A-star.py
         '''
-        sx = 30 # raw_input("Enter source and destination Coordinates")
-        sy = 50  # raw_input()
-        dx = 30   # raw_input()
-        dy = 200  # raw_input()
+        sx = 25 # raw_input("Enter source and destination Coordinates")
+        sy = 25  # raw_input()
+        dx = 159   # raw_input()
+        dy = 100  # raw_input()
 
         sol = bfs(arr, sx, sy, dx, dy, final_contours)
         solution = final_path(sol, arr1)
@@ -466,8 +466,8 @@ def main():
         else:
             for i in range(len(solution)):
                 start = (solution[i][1], solution[i][0])
-                cv2.circle(arr,start, 1, [255, 0, 255])
-                cv2.circle(img, start, 1, [255, 0, 255])
+                cv2.circle(arr,start, 1, [255, 255, 255])
+                cv2.circle(img, start, 1, [255, 255, 255])
 
         cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])

@@ -435,7 +435,7 @@ def make_path(sx, sy, dx, dy):
 
 def final_path(sx, sy, dx, dy, arr, sol):
     print 'len ', len(sol)
-    switch_d = 30
+    switch_d = 35
     solution = []
     delta = 5
     theta = math.pi/8
@@ -541,8 +541,8 @@ def main():
         '''
         Code from A-star.py
         '''
-        sx = 5 # raw_input("Enter source and destination Coordinates")
-        sy = 5  # raw_input()
+        sx = 25 # raw_input("Enter source and destination Coordinates")
+        sy = 25  # raw_input()
         dx = 159   # raw_input()
         dy = 100 # raw_input()
 
@@ -560,9 +560,9 @@ def main():
         else:
             for i in range(len(solution)):
                 start = (solution[i][1], solution[i][0])
-                cv2.circle(arr,start, 1, [255, 0, 255])
-                cv2.circle(img, start, 1, [255, 0, 255])
-                cv2.circle(arr1, start, 1, [255, 0, 255])
+                cv2.circle(arr,start, 1, [255, 255, 255])
+                cv2.circle(img, start, 1, [255, 255, 255])
+                cv2.circle(arr1, start, 1, [255, 255, 255])
 
         cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
