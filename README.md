@@ -33,7 +33,7 @@ else:
 
 ---
 
-<b> Prequisites</b>
+<b> Prerequisites</b>
 - Python
 - OpenCV
 - Numpy
