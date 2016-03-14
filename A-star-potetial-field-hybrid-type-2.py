@@ -435,12 +435,12 @@ def make_path(sx, sy, dx, dy):
 
 def final_path(sx, sy, dx, dy, arr, sol):
     print 'len ', len(sol)
-    switch_d = 35
+    switch_d = 30
     solution = []
     delta = 5
     theta = math.pi/8
     l = len(sol)
-    dist = [0 for x in range(l)]
+    dist1 = [0 for x in range(l)]
     dict = {}
     for i in range(len(sol)):
         dict[(sol[i][0], sol[i][1])] = i
@@ -449,12 +449,34 @@ def final_path(sx, sy, dx, dy, arr, sol):
         #print 'i ', i
         nd = nearestObstacle(sx, sy, arr)
         if nd < switch_d:
-            print 'nd ', nd
+            #print 'nd ', nd
             sol1 = path_planning(arr, sx, sy, dx, dy,theta, switch_d)
             for k in sol1:
                 solution.append(k)
             sx1 = sol1[-1][0]
             sy1 = sol1[-1][1]
+
+            d = 1000000000
+            cx = -1
+            cy = -1
+            for j in sol:
+                if math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1])) < d:
+                    cx = j[0]
+                    cy = j[1]
+                    d = math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1]))
+            sx = cx
+            sy = cy
+
+            endx = sol[-1][0]
+            endy = sol[-1][1]
+            cnt = 0
+            i = dict[(sx, sy)]
+            while sx != endx and sy != endy and cnt < 10:
+                (sx, sy) = sol[i]
+                i += 1
+                cnt += 1
+
+            '''
             d = dict[(sx, sy)] + 4*len(sol1)
             d1 = d - delta
             d2 = d + delta
@@ -485,7 +507,10 @@ def final_path(sx, sy, dx, dy, arr, sol):
                     cost = cost1
                     (sx, sy) = sol[j]
 
+            '''
             i = dict[(sx, sy)]
+
+
             sol1 = make_path(sx1, sy1, sx, sy)
             for k in sol1:
                 solution.append(k)
@@ -544,7 +569,7 @@ def main():
         sx = 25 # raw_input("Enter source and destination Coordinates")
         sy = 25  # raw_input()
         dx = 159   # raw_input()
-        dy = 100 # raw_input()
+        dy = 150 # raw_input()
 
         sol = bfs(arr, sx, sy, dx, dy, final_contours)
         l = len(sol)
