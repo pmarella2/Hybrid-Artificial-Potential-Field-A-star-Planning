@@ -460,7 +460,7 @@ def final_path(sx, sy, dx, dy, arr, sol):
             cx = -1
             cy = -1
             for j in sol:
-                if math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1])) < d:
+                if math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1])) <= d:
                     cx = j[0]
                     cy = j[1]
                     d = math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1]))
