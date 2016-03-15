@@ -294,7 +294,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
     t = 1 #time lapse
     #theta = 0 #initial angle
     x,y,z = arr.shape
-    theta_const = math.pi*30/180  #maximum allowed turn angle
+    theta_const = math.pi*60/180  #maximum allowed turn angle
     q_star = 50000
     d_star = 20000
 
@@ -379,7 +379,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
 def final_path(sol, arr):
     l = len(sol)
     print l
-    div = 45
+    div = 80
 
     start = 0
     end = div
@@ -415,7 +415,7 @@ def main():
         cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img2 = cv2.medianBlur(cimg,13)
 
-        ret,thresh1 = cv2.threshold(cimg,40,255,cv2.THRESH_BINARY)
+        ret,thresh1 = cv2.threshold(cimg,100,120,cv2.THRESH_BINARY)
         t2 = copy.copy(thresh1)
 
         x, y  = thresh1.shape
@@ -425,7 +425,7 @@ def main():
         image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             cnt = contours[i]
-            if cv2.contourArea(cnt) > 300 and cv2.contourArea(cnt) < 5000 :
+            if cv2.contourArea(cnt) > 1000 and cv2.contourArea(cnt) < 15000 :
                 cv2.drawContours(img, [cnt],-1, [0, 255, 255])
                 cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
                 cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
@@ -453,10 +453,10 @@ def main():
         '''
         Code from A-star.py
         '''
-        sx = 25 # raw_input("Enter source and destination Coordinates")
-        sy = 25  # raw_input()
-        dx = 159   # raw_input()
-        dy = 100  # raw_input()
+        sx = 20 # raw_input("Enter source and destination Coordinates")
+        sy = 20  # raw_input()
+        dx = 500   # raw_input()
+        dy = 1000  # raw_input()
 
         sol = bfs(arr, sx, sy, dx, dy, final_contours)
         solution = final_path(sol, arr1)
