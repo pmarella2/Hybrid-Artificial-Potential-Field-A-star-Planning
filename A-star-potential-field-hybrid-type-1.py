@@ -231,7 +231,7 @@ def dist(sx, sy, x, y, theta, arr, q_star):  #distance of obstacle in direction 
 def obstacle_force(arr, sx, sy, q_star): #sx,sy :- source    dx, dy:- destination    q-star:- threshold distance of obstacles
     forcex = 0
     forcey = 0
-    neta = 30000
+    neta = 3000
     x, y , z= arr.shape
     for i in range(8):
         (ox,oy) = dist(sx, sy, x, y, i*math.pi/4, arr, q_star)
@@ -379,7 +379,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta):
 def final_path(sol, arr):
     l = len(sol)
     print l
-    div = 80
+    div = 250
 
     start = 0
     end = div
@@ -468,6 +468,11 @@ def main():
                 start = (solution[i][1], solution[i][0])
                 cv2.circle(arr,start, 1, [255, 255, 255])
                 cv2.circle(img, start, 1, [255, 255, 255])
+
+            for i in range(len(sol)):
+                start = (sol[i][1], sol[i][0])
+                cv2.circle(arr,start, 1, [255, 0, 0])
+                cv2.circle(img, start, 1, [255, 0, 0])
 
         cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
         cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
