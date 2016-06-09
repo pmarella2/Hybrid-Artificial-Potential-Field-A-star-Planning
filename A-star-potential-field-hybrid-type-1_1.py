@@ -1,11 +1,10 @@
 '''
-In this method ,we are actually trying to find out a mix solution. Potetial field works best when it comes near obstacles,
-while on other had A-star works best in reverse case.
-So here we will calculate the distance from nearest obstacle and accordingly we will change our method to A-star from Potential Field ad vice versa.
+In this method , we are trying to find offline path first using A* algorithm, then we use Artificial potential method
+to reach local goals on A* planned path.
+Suppose, a1, a2, a3, .......  an be path we get from A*, then to potential field we give following as consecutive goals:
+a(i), a(i+4), a(i+8), a(i+12), ..... a(i+n)
+
 Hence this way we are using power of both A-star and potential field  :)
-
-// merge function need improvement, write now it will not work for large values of switch_d
-
 '''
 
 import cv2
@@ -16,6 +15,7 @@ import glob
 import math
 import time
 import Queue as Q
+
 
 def printx(x):
     #print x
@@ -52,29 +52,11 @@ def cost(ox, oy, nx, ny, penalty, clearance): #ox, oy:- old points  nx, ny :- ne
 def heuristic(nx, ny,dx, dy): #ox, oy:- old points  nx, ny :- new points
     return math.sqrt((nx-dx)*(nx-dx)+ (ny-dy)*(ny-dy))
 
-def nearestObstacle(x, y, arr): #this function returns the distance of nearest obstacle from the given point
-    d = 100000000000
-    #print 'shape', arr.shape
-    ex, ey, ez = arr.shape
-
-    for i in range(8):
-        ansx = 0
-        ansy = 0
-        count = 1
-        theta = i*math.pi/4
-        while True:
-            ansx = x + count*math.sin(theta)
-            ansy = y + count*math.cos(theta)
-
-            if check_boundaries(ex, ey, ansx, ansy) == False:
-                break
-            else:
-                if check_obstacles(arr, ansx, ansy) == True:
-                    break
-            count += 5
-        d = min(d, math.sqrt((ansx-x)*(ansx-x) + (ansy-y)*(ansy-y)))
-
-    return d
+def check_boundaries1(ex, ey, nx, ny): #ex, ey :- end points of frame
+    if nx > -1 and ny > -1 and nx < ex and ny < ey:
+        return True
+    else:
+        return False
 
 def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx, dy :- destination coordinates
     q = Q.PriorityQueue()
@@ -105,9 +87,7 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
     s = time.clock()
     cnt = 0
     cntq = 0
-    count  = 0
     while not q.empty():
-        count += 1
         p = q.get()
         x = int(p.pointx)
         y = int(p.pointy)
@@ -120,17 +100,17 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
             while p is not None:
                 solution.append([p.pointx, p.pointy])
                 p = p.parent
-            print 'time : ', time.clock()-s
-            print cnt, cntq
+            #print 'time : ', time.clock()-s
+            #print cnt, cntq
             return solution
 
         for i in range(len(actions)):
             nx = int(actions[i][0] + x)
             ny = int(actions[i][1] + y)
-            if check_boundaries(ex, ey, nx, ny) == True:
+            if check_boundaries1(ex, ey, nx, ny) == True:
                 #if arr.item(nx, ny, 0) == 0 and arr.item(nx, ny, 1) == 0 and arr.item(nx, ny, 2) == 0:
                     pen = dist[x][y]
-                    pen_new = cost(x, y, nx, ny, pen, 255-arr[nx][ny][0])
+                    pen_new = cost(x, y, nx, ny, pen, arr[nx][ny][0])
                     h_new = heuristic(nx, ny, dx, dy)
                     if dist[nx][ny] > pen_new :
                         dist[nx][ny]  = pen_new
@@ -140,7 +120,7 @@ def bfs(arr, sx, sy, dx, dy, final_contours): # sx, sy :- source coordinates  dx
                         distplusHeuristic[nx][ny] = dist[nx][ny] + h_new
                         cntq = cntq+1
                         q.put(pixel1(pen_new, nx, ny, p, h_new))
-    print 'time : ', time.clock()-s
+    #print 'time : ', time.clock()-s
     return []
 
 '''
@@ -204,11 +184,16 @@ def fill_clearance(arr,cmax,  final_contours): # sx, sy :- source coordinates  d
                     if min_cost[nx][ny] > penalty(x, y, nx, ny, pen):
                         q.put(pixel(penalty(x,y,nx,ny,pen), nx, ny))
     return min_cost
-
 '''
 function definition from Clearance-feasibility
 end
 '''
+
+'''
+function definition from Artificial Potential potential starts
+'''
+
+
 def check_obstacles(arr, ansx, ansy):  #function to check whether a given point is on obstacle or not
     if arr[ansx][ansy][0] == 255:
         return True
@@ -249,7 +234,7 @@ def dist(sx, sy, x, y, theta, arr, q_star):  #distance of obstacle in direction 
 def obstacle_force(arr, sx, sy, q_star, theta1): #sx,sy :- source    dx, dy:- destination    q-star:- threshold distance of obstacles
     forcex = 0
     forcey = 0
-    neta = 300000000000
+    neta = 30000000000000
     x, y , z= arr.shape
     for i in range(-8, 9):
         (ox,oy) = dist(sx, sy, x, y, (theta1 + i*math.pi/16 + 2*math.pi)%(2*math.pi), arr, q_star)
@@ -274,17 +259,16 @@ def obstacle_force(arr, sx, sy, q_star, theta1): #sx,sy :- source    dx, dy:- de
         forcey += fy
     thet = math.atan2(forcex, forcey)
     arr1 = arr
-    cv2.circle(arr1, (sy, sx), 1, (0, 255, 255),1)
-    cv2.imshow('Artificial only', arr1)
-    k = cv2.waitKey(1)
-    #print 'yes '
+    cv2.line(arr1, (sy, sx), (int(sy + 10*math.cos(thet)), int(sx + math.sin(thet))), (0, 255, 255), 1)
+    cv2.imshow('arr', arr1)
+    k = cv2.waitKey(20)
     return (forcex, forcey)
 
 def goal_force(arr, sx, sy, dx, dy, d_star): # sx, sy :- source  dx, dy:- destination   d_star:- threshold distance from goal
     forcex = 0
     forcey = 0
-    tau = 1000000  #constant
-    #printx('10')
+    tau = 100000000  #constant
+    printx('10')
     d = math.sqrt((dx-sx)*(dx-sx) + (dy-sy)*(dy-sy))
     if d > d_star:
         forcex += ((d_star*tau*math.sin(math.atan2(dx-sx, dy-sy))))
@@ -294,15 +278,10 @@ def goal_force(arr, sx, sy, dx, dy, d_star): # sx, sy :- source  dx, dy:- destin
         forcex += ((dx-sx)*tau)
         forcey += ((dy-sy)*tau)
 
-    #printx('11')
+    printx('11')
     return (forcex, forcey)
 
-def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
-    ex, ey, ez = arr.shape
-    arr1 = np.zeros((ex, ey))
-    #cv2.imshow('img', arr)
-    #k = cv2.waitKey(0)
-    #print 'abc'
+def path_planning(arr, sx1, sy1, dx, dy, theta):
     '''
 
     :param arr: input map
@@ -310,27 +289,22 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
     :param sy1: source y
     :param dx: destination x
     :param dy: destination y
-    :param theta: current angle
-    :param d: switch distance
     :return: path
     '''
 
     #Parameters Declaration
 
-    flx = 10000  # maximum total force in x
-    fly = 10000  # maximum total force in y
-    v = 5  # velocity magnitude
-    t = 1  # time lapse
-    # theta = 0 #initial angle
-    x, y, z = arr.shape
-    theta_const = math.pi * 30 / 180  # maximum allowed turn angle
-    q_star = 30
+    flx = 10000  #maximum total force in x
+    fly = 10000  #maximum total force in y
+    v = 1 #velocity magnitude
+    t = 1 #time lapse
+    #theta = 0 #initial angle
+    x,y,z = arr.shape
+    theta_const = math.pi*30/180  #maximum allowed turn angle
+    q_star = 10
     d_star = 2
-    #print 'xyz'
 
     if arr[sx1][sy1][0] == 255 or arr[dx][dy][0] == 255:
-        print arr[sx1][sy1], sx1, sy1
-        print arr[dx][dy], dx, dy
         return []
     sx = sx1
     sy = sy1
@@ -338,7 +312,7 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
     sol = []
     sol.append((sx, sy))
 
-    #print 'def'
+
     sx += int(v*math.sin(theta))
     sy += int(v*math.cos(theta))
     sol.append((sx, sy))
@@ -350,9 +324,10 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
 
         resultant, theta = atan((Q*sin @)/(P+Q*cos @))
     '''
-    count = 0
+
+    #count  = 0
     while True:
-        count += 1
+        #count += 1
         (fx, fy) = obstacle_force(arr, sx, sy, q_star, theta)
         (gx, gy) = goal_force(arr, sx, sy, dx, dy, d_star)
 
@@ -368,13 +343,11 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
             ty = min(ty, fly)
         theta1 = math.atan2(tx, ty)
 
-        #print 'tx' ,tx, 'ty' ,ty
-            #sleep(1)
         if arr[sx][sy][0] == 255:
             print gx, gy, fx, fy
             print 'tx ', tx, ' ty ', ty, 'sx ', sx, ' sy ', sy
             print theta1*180/math.pi, theta*180/math.pi
-
+            sleep(10)
 
         P = v
         angle = theta1-theta  #angle between velocity and force vector
@@ -402,20 +375,15 @@ def path_planning(arr, sx1, sy1, dx, dy, theta, sd):
             return sol
 
         sol.append((sx, sy))
+
         if sx < dx+ 2 and sx > dx - 2 and sy < dy+2 and sy > dy-2:
-            print 'abc'
             break
-
-        nd = nearestObstacle(sx, sy, arr)
-        #print nd, sx, sy
-        #print 'nd ',nd, sx, sy
-        #sleep(0.5)
-        if nd > sd:
-            print 'nd ',nd, sx, sy
-            break
-
-    #sleep(10)
+    sol.append((theta))
     return sol
+
+'''
+function definition from Artificial Potential potential starts
+'''
 
 def print_path_to_file(sol):
     with open('path.txt', 'w') as f:
@@ -437,210 +405,127 @@ def read_path_from_file():
 
     return sol
 
-def check(x, y, dx, dy):
-    if x < dx+2 and x > dx -2 and y < dy+2 and y > dy-2:
-        return True
-    else:
-        return False
-
-def make_path(sx, sy, dx, dy, arr1):
-    #print sx, sy, dx, dy
-    sol = []
-    theta = math.atan2(dx-sx, dy-sy)
-    i = 1
-    x = sx
-    y = sy
-    while not (x > dx-2 and x < dx + 2 and y > dy - 2 and y < dy + 2):
-            sol.append((x, y))
-            #print x, y
-            x = sx + int(i*math.sin(theta))
-            y = sy + int(i*math.cos(theta))
-            i += 1
-            cv2.circle(arr1, (sy, sx), 1, (0, 255, 255), 1)
-            cv2.imshow('Artificial only', arr1)
-            k = cv2.waitKey(1)
-    return sol
-
-def final_path(sx, sy, dx, dy, arr, sol):
-    print 'len ', len(sol)
-    switch_d = 70
-    solution = []
-    delta = 5
-    theta = math.pi/8
+def final_path(sol, arr):
     l = len(sol)
-    dist1 = [0 for x in range(l)]
-    dict = {}
-    for i in range(len(sol)):
-        dict[(sol[i][0], sol[i][1])] = i
-    i = 0
-    while i < l:
-        #print 'i ', i
-        if sx < dx + 2 and sx > dx - 2 and sy < dy + 2 and sy > dy - 2:
-            break
-        nd = nearestObstacle(sx, sy, arr)
-        print "nd : ", nd
-        if nd < switch_d:
-            #print 'nd ', nd
-            sol1 = path_planning(arr, sx, sy, dx, dy,theta, switch_d)
-            print 'sol returned'
-            for k in sol1:
-                solution.append(k)
-            sx1 = sol1[-1][0]
-            sy1 = sol1[-1][1]
+    print l
+    div = 150
+    arr1 = copy.copy(arr)
 
-            d = 1000000000
-            cx = -1
-            cy = -1
-            for j in sol:
-                if math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1])) <= d:
-                    cx = j[0]
-                    cy = j[1]
-                    d = math.sqrt((sx1-j[0])*(sx1-j[0])+ (sy1-j[1])*(sy1-j[1]))
-            sx = cx
-            sy = cy
+    start = 0
+    end = div
+    solution = []
+    theta = 0
 
-            endx = sol[-1][0]
-            endy = sol[-1][1]
-            cnt = 0
-            i = dict[(sx, sy)]
-            while sx != endx and sy != endy and cnt < 25:
-                (sx, sy) = sol[i]
-                i += 1
-                cnt += 1
+    while start < l-1:
+        print sol[start][0], sol[start][1], sol[end][0], sol[end][1]
+        ret = path_planning(arr, sol[start][0], sol[start][1], sol[end][0], sol[end][1], theta)
+        for i in range(len(ret)-1):
+            solution.append(ret[i])
+        l1 = len(ret)-1
+        theta= ret[-1]
+        '''
+        if l1 > 2:
+            x1 = ret[l1-1][0]
+            x2 = ret[l1-2][0]
+            y1 = ret[l1-1][1]
+            y2 = ret[l1-2][1]
+            theta = math.atan2(x1-x2, y1-y2)
+            cv2.line(arr1, (int(y1), int(x1)), (int(y2), int(x2)), (255, 0, 0), 1)
+            cv2.imshow('img', arr1)
+            k = cv2.waitKey(0)
+        '''
+        start = end
+        end += div
+        if end > l-1:
+            end = l-1
 
-            '''
-            d = dict[(sx, sy)] + 4*len(sol1)
-            d1 = d - delta
-            d2 = d + delta
-            x1 = 0
-            x2 = 0
-            y1 = 0
-            y2 = 0
-
-            d1 = max(d1, 0)
-            if d1 > len(sol)-1 or d1 < 0:
-                print 'd1 : ' , d1, x1, y1
-
-            (x1, y1) = sol[d1]
-
-            d2 = min(len(sol)-1, d2)
-            (x2, y2) = sol[d2]
-
-            d1 = dict[(x1, y1)]
-            d2 = dict[(x2, y2)]
-
-            solx = sol[-1][0]
-            soly = sol[-1][1]
-            cost = 100000000
-            for j in range(d1, d2):
-                (x, y) = sol[j]
-                cost1 = math.sqrt((x-solx)*(x-solx) + (y-soly)*(y-soly))
-                if cost > cost1:
-                    cost = cost1
-                    (sx, sy) = sol[j]
-
-            '''
-            i = dict[(sx, sy)]
-
-
-            sol1 = make_path(sx1, sy1, sx, sy, arr)
-            for k in sol1:
-                solution.append(k)
-        else:
-            solution.append((sol[i][0], sol[i][1]))
-            i += 1
-            if i >= l:
-                break
-            sx = sol[i][0]
-            sy = sol[i][1]
-            theta = math.atan2(sol[i][0]-sol[i-1][0], sol[i][1]-sol[i-1][1])
+    for i in solution:
+        print i
     return solution
 
 def main():
     counter = 1
-    for img in images:
-    #if not im == "5.jpg":
-     #   continue
-        img = cv2.imread('1.jpg')
-        cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        img2 = cv2.medianBlur(cimg,13)
+    #for im in images:
 
-        ret,thresh1 = cv2.threshold(cimg,100,120,cv2.THRESH_BINARY)
-        t2 = copy.copy(thresh1)
+    img = cv2.imread('1.jpg')
 
-        x, y  = thresh1.shape
-        arr = np.zeros((x, y, 3), np.uint8)
-        arr1 = np.zeros((x, y, 3), np.uint8)
-        final_contours= []
-        image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-        for i in range(len(contours)):
-            cnt = contours[i]
-            if cv2.contourArea(cnt) > 1000 and cv2.contourArea(cnt) < 15000 :
-                cv2.drawContours(img, [cnt],-1, [0, 255, 255])
-                cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
-                cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
-                final_contours.append(cnt)
-        cmax = 50
-        start = time.clock()
-        min_cost = fill_clearance(arr,cmax, final_contours)
-        print 'time: ',  time.clock()-start
+    cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    img2 = cv2.medianBlur(cimg,13)
 
-        for i in xrange(x):
-            for j in xrange(y):
-                pix_val = int(255-5*min_cost[i][j])
-                if(min_cost[i][j] > 10000):
-                    pix_val = 0
-                arr[i, j] = (pix_val, pix_val, pix_val)
-        for cnt in final_contours:
+    ret,thresh1 = cv2.threshold(cimg,100,120,cv2.THRESH_BINARY)
+    t2 = copy.copy(thresh1)
+
+    x, y  = thresh1.shape
+    arr = np.zeros((x, y, 3), np.uint8)
+    arr1 = np.zeros((x, y, 3), np.uint8)
+    final_contours= []
+    image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    for i in range(len(contours)):
+        cnt = contours[i]
+        if cv2.contourArea(cnt) > 1000 and cv2.contourArea(cnt) < 15000 :
+            cv2.drawContours(img, [cnt],-1, [0, 255, 255])
             cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
+            cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
+            final_contours.append(cnt)
+    cmax = 50
+    start = time.clock()
+    #min_cost = fill_clearance(arr,cmax, final_contours)
+    print 'time: ',  time.clock()-start
+    '''
+    for i in xrange(x):
+        for j in xrange(y):
+            if min_cost[i][j] == 100000:
+                min_cost[i][j] = 0;
+    '''
+    '''
+    for i in xrange(x):
+        for j in xrange(y):
+            pix_val = int(5*min_cost[i][j])
+            if(min_cost[i][j] > 10000):
+                pix_val = 255
+            arr[i, j] = (pix_val, pix_val, pix_val)
+    for cnt in final_contours:
+        cv2.fillConvexPoly(arr, cnt, [0, 0, 0])
+    '''
+    '''
+    Code from A-star.py
+    '''
+    sx = 20 # raw_input("Enter source and destination Coordinates")
+    sy = 20  # raw_input()
+    dx = 500   # raw_input()
+    dy = 1000  # raw_input()
 
-        '''
-        Code from A-star.py
-        '''
-        sx = 60 # raw_input("Enter source and destination Coordinates")
-        sy = 60  # raw_input()
-        dx = 480   # raw_input()
-        dy = 900 # raw_input()
+    #sol = bfs(arr, sx, sy, dx, dy, final_contours)
+    #print_path_to_file(sol)
 
-        sol = bfs(arr, sx, sy, dx, dy, final_contours)
-        #sol = read_path_from_file()
+    sol = read_path_from_file()
+    print sol
+    solution = final_path(sol, arr1)
+    print solution
+
+    if len(solution) == 0:
+        print 'No solution from source to destination'
+    else:
+        for i in range(len(solution)):
+            start = (solution[i][1], solution[i][0])
+            cv2.circle(arr,start, 1, [255, 255, 255])
+            cv2.circle(img, start, 1, [255, 255, 255])
+
         for i in range(len(sol)):
             start = (sol[i][1], sol[i][0])
-            cv2.circle(arr, start, 1, [0, 0, 255])
-            cv2.circle(img, start, 1, [0, 0, 255])
-            cv2.circle(arr1, start, 1, [0, 0, 255])
+            cv2.circle(arr,start, 1, [255, 0, 0])
+            cv2.circle(img, start, 1, [255, 0, 0])
 
-        l = len(sol)
-        s = []
-        for i in range(l):
-            s.append((sol[l-i-1][0], sol[l-i-1][1]))
-        solution = final_path(sx,sy, dx, dy, arr, s)
-        #print solution
-
-
-        if len(solution) == 0:
-            print 'No solution from source to destination'
-        else:
-            for i in range(len(solution)):
-                start = (solution[i][1], solution[i][0])
-                cv2.circle(arr, start, 1, [255, 0, 0])
-                cv2.circle(img, start, 1, [255, 0, 0])
-                cv2.circle(arr1, start, 1, [255, 0, 0 ])
-
-        cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
-        cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
-        cv2.circle(img, (sy, sx), 2, [0, 255, 0])
-        cv2.circle(img, (dy, dx), 2, [0, 255, 0])
-
-        output = "output2/"+`counter`
-        output += ".jpg"
-        cv2.imwrite(output, img)
-        counter += 1
-
-        cv2.imshow('image', img)
-        cv2.imshow('arr', arr)
-        cv2.imshow('arr1', arr1)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
+    cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
+    cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
+    cv2.circle(img, (sy, sx), 2, [0, 255, 0])
+    cv2.circle(img, (dy, dx), 2, [0, 255, 0])
+    output = "output1/"+`counter`
+    output += ".jpg"
+    cv2.imwrite(output, img)
+    counter += 1
+    cv2.imshow('image', img)
+    cv2.imshow('arr', arr)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 main()
