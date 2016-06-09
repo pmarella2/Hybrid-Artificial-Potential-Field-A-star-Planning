@@ -445,87 +445,87 @@ def final_path(sol, arr):
 
 def main():
     counter = 1
-    #for im in images:
+    for im in images:
 
-    img = cv2.imread('1.jpg')
+        img = cv2.imread(im)
 
-    cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    img2 = cv2.medianBlur(cimg,13)
+        cimg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        img2 = cv2.medianBlur(cimg,13)
 
-    ret,thresh1 = cv2.threshold(cimg,100,120,cv2.THRESH_BINARY)
-    t2 = copy.copy(thresh1)
+        ret,thresh1 = cv2.threshold(cimg,100,120,cv2.THRESH_BINARY)
+        t2 = copy.copy(thresh1)
 
-    x, y  = thresh1.shape
-    arr = np.zeros((x, y, 3), np.uint8)
-    arr1 = np.zeros((x, y, 3), np.uint8)
-    final_contours= []
-    image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    for i in range(len(contours)):
-        cnt = contours[i]
-        if cv2.contourArea(cnt) > 1000 and cv2.contourArea(cnt) < 15000 :
-            cv2.drawContours(img, [cnt],-1, [0, 255, 255])
-            cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
-            cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
-            final_contours.append(cnt)
-    cmax = 50
-    start = time.clock()
-    #min_cost = fill_clearance(arr,cmax, final_contours)
-    print 'time: ',  time.clock()-start
-    '''
-    for i in xrange(x):
-        for j in xrange(y):
-            if min_cost[i][j] == 100000:
-                min_cost[i][j] = 0;
-    '''
-    '''
-    for i in xrange(x):
-        for j in xrange(y):
-            pix_val = int(5*min_cost[i][j])
-            if(min_cost[i][j] > 10000):
-                pix_val = 255
-            arr[i, j] = (pix_val, pix_val, pix_val)
-    for cnt in final_contours:
-        cv2.fillConvexPoly(arr, cnt, [0, 0, 0])
-    '''
-    '''
-    Code from A-star.py
-    '''
-    sx = 20 # raw_input("Enter source and destination Coordinates")
-    sy = 20  # raw_input()
-    dx = 500   # raw_input()
-    dy = 1000  # raw_input()
+        x, y  = thresh1.shape
+        arr = np.zeros((x, y, 3), np.uint8)
+        arr1 = np.zeros((x, y, 3), np.uint8)
+        final_contours= []
+        image, contours, hierarchy = cv2.findContours(t2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        for i in range(len(contours)):
+            cnt = contours[i]
+            if cv2.contourArea(cnt) > 1000 and cv2.contourArea(cnt) < 15000 :
+                cv2.drawContours(img, [cnt],-1, [0, 255, 255])
+                cv2.fillConvexPoly(arr, cnt, [255, 255, 255])
+                cv2.fillConvexPoly(arr1, cnt, [255, 255, 255])
+                final_contours.append(cnt)
+        cmax = 50
+        start = time.clock()
+        min_cost = fill_clearance(arr,cmax, final_contours)
+        print 'time: ',  time.clock()-start
+        '''
+        for i in xrange(x):
+            for j in xrange(y):
+                if min_cost[i][j] == 100000:
+                    min_cost[i][j] = 0;
+        '''
 
-    #sol = bfs(arr, sx, sy, dx, dy, final_contours)
-    #print_path_to_file(sol)
+        for i in xrange(x):
+            for j in xrange(y):
+                pix_val = int(5*min_cost[i][j])
+                if(min_cost[i][j] > 10000):
+                    pix_val = 255
+                arr[i, j] = (pix_val, pix_val, pix_val)
+        for cnt in final_contours:
+            cv2.fillConvexPoly(arr, cnt, [0, 0, 0])
 
-    sol = read_path_from_file()
-    print sol
-    solution = final_path(sol, arr1)
-    print solution
+        '''
+        Code from A-star.py
+        '''
+        sx = 50 # raw_input("Enter source and destination Coordinates")
+        sy = 50  # raw_input()
+        dx = 450   # raw_input()
+        dy = 900  # raw_input()
 
-    if len(solution) == 0:
-        print 'No solution from source to destination'
-    else:
-        for i in range(len(solution)):
-            start = (solution[i][1], solution[i][0])
-            cv2.circle(arr,start, 1, [255, 255, 255])
-            cv2.circle(img, start, 1, [255, 255, 255])
+        sol = bfs(arr, sx, sy, dx, dy, final_contours)
+        #print_path_to_file(sol)
 
-        for i in range(len(sol)):
-            start = (sol[i][1], sol[i][0])
-            cv2.circle(arr,start, 1, [255, 0, 0])
-            cv2.circle(img, start, 1, [255, 0, 0])
+        #sol = read_path_from_file()
+        #print sol
+        solution = final_path(sol, arr1)
+        #print solution
 
-    cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
-    cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
-    cv2.circle(img, (sy, sx), 2, [0, 255, 0])
-    cv2.circle(img, (dy, dx), 2, [0, 255, 0])
-    output = "output1/"+`counter`
-    output += ".jpg"
-    cv2.imwrite(output, img)
-    counter += 1
-    cv2.imshow('image', img)
-    cv2.imshow('arr', arr)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        if len(solution) == 0:
+            print 'No solution from source to destination'
+        else:
+            for i in range(len(solution)):
+                start = (solution[i][1], solution[i][0])
+                cv2.circle(arr,start, 1, [255, 255, 255])
+                cv2.circle(img, start, 1, [255, 255, 255])
+
+            for i in range(len(sol)):
+                start = (sol[i][1], sol[i][0])
+                cv2.circle(arr,start, 1, [255, 0, 0])
+                cv2.circle(img, start, 1, [255, 0, 0])
+
+        cv2.circle(arr, (sy, sx), 2, [0, 255, 0])
+        cv2.circle(arr, (dy, dx), 2, [0, 255, 0])
+        cv2.circle(img, (sy, sx), 2, [0, 255, 0])
+        cv2.circle(img, (dy, dx), 2, [0, 255, 0])
+        output = "output1/"+`counter`
+        output += ".jpg"
+        cv2.imwrite(output, img)
+        counter += 1
+        cv2.imshow('image', img)
+        cv2.imshow('arr', arr)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 main()
