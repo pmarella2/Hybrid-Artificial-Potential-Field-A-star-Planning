@@ -43,34 +43,36 @@ else:
 It will take all images in root folder as input images.
 
 Sample Input Images:
-
+![Alt text](1.jpg?raw=true "Sample Image")
 ![alt text][logo1]
-[logo1]: 1.jpg "Sample Image"
 
+
+![Alt text](2.jpg?raw=true "Sample Image")
 ![alt text][logo2]
-[logo2]: 2.jpg "Sample Image"
 
+
+![Alt text](3.jpg?raw=true "Sample Image")
 ![alt text][logo3]
-[logo3]: 3.jpg "Sample Image"
 
 Output Type 1:
 
+![Alt text](output1/1.jpg?raw=true "Sample Image")
 ![alt text][logo4]
-[logo4]: output1/1.jpg "Sample Image"
 
+![Alt text](output1/2.jpg?raw=true "Sample Image")
 ![alt text][logo5]
-[logo5]: output1/2.jpg "Sample Image"
 
+![Alt text](output1/3.jpg?raw=true "Sample Image")
 ![alt text][logo6]
-[logo6]: output1/3.jpg "Sample Image"
+
 
 Output Type 2:
-
+![Alt text](output2/1.jpg?raw=true "Sample Image")
 ![alt text][logo7]
-[logo7]: output2/1.jpg "Sample Image"
 
+
+![Alt text](output2/2.jpg?raw=true "Sample Image")
 ![alt text][logo8]
-[logo8]: output2/2.jpg "Sample Image"
 
+![Alt text](output2/3.jpg?raw=true "Sample Image")
 ![alt text][logo9]
-[logo9]: output2/3.jpg "Sample Image"
